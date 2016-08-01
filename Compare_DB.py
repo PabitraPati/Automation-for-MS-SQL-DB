@@ -51,27 +51,27 @@ class SQL_Verify(object):
         return output_file
 
     def get_table_list_in_DB(self, Instance_name, DB_name):
-            '''
-            Returns the list of table in the given database.
+        '''
+        Returns the list of table in the given database.
 
-            Arguments :-
-            Instance_name :- Name of the instance on which the db is present
-            DB_name  :- name of DB, whose table list needs to be fetched
-            '''
-            output_file = "C:\\SQL_Data\\Table_list_DB-%s_Output.txt" %(DB_name)
+        Arguments :-
+        Instance_name :- Name of the instance on which the db is present
+        DB_name  :- name of DB, whose table list needs to be fetched
+        '''
+        output_file = "C:\\SQL_Data\\Table_list_DB-%s_Output.txt" %(DB_name)
 
-            query = 'SELECT NAME from [%s].sys.tables' %(DB_name)
-            command = 'sqlcmd -S "%s" -Q "%s"' %(Instance_name, query)
+        query = 'SELECT NAME from [%s].sys.tables' %(DB_name)
+        command = 'sqlcmd -S "%s" -Q "%s"' %(Instance_name, query)
 
-            output = self._execute_remote_ps_command(command)
-            if not output:
-                self.log(
-                    "Error in command execution :- get_table_list_in_DB :- [%s, %s] "
-                    %(Instance_name, DB_name))
-                return False
-            with open(output_file, 'w') as f:
-                f.write(output)
-            return output_file
+        output = self._execute_remote_ps_command(command)
+        if not output:
+            self.log(
+                "Error in command execution :- get_table_list_in_DB :- [%s, %s] "
+                %(Instance_name, DB_name))
+            return False
+        with open(output_file, 'w') as f:
+            f.write(output)
+        return output_file
 
     def get_db_Schema(self, Instance_name, DB_name):
         '''
