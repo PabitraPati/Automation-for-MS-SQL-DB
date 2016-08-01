@@ -42,7 +42,7 @@ class SQL_Verify(object):
 
         output = self._execute_remote_ps_command(command)
         if not output:
-            self.log(
+            self.log.error(
                 "Error in command execution :- get_table_list_in_DB :- [%s, %s] "
                 %(Instance_name, DB_name))
             return False
@@ -65,7 +65,7 @@ class SQL_Verify(object):
 
         output = self._execute_remote_ps_command(command)
         if not output:
-            self.log(
+            self.log.error(
                 "Error in command execution :- get_table_list_in_DB :- [%s, %s] "
                 %(Instance_name, DB_name))
             return False
@@ -119,7 +119,7 @@ class SQL_Verify(object):
         command = 'sqlcmd -S "%s" -Q "%s"' %(Instance_name, query)
         output = self._execute_remote_ps_command(command)
         if not output:
-            self.log(
+            self.log.error(
                 "Error in command execution :- get_table_Schema :- [%s, %s, %s] "
                 %(Instance_name, DB_name, table_name))
             return False
@@ -167,7 +167,7 @@ class SQL_Verify(object):
         command = 'sqlcmd -S "%s" -Q "%s"' %(Instance_name, query)
         output = self._execute_remote_ps_command(command)
         if not output:
-            self.log(
+            self.log.error(
                 "Error in command execution :- get_table_data :- [%s, %s, %s] "
                 %(Instance_name, DB_name, table_name))
             return False
@@ -213,13 +213,13 @@ class SQL_Verify(object):
          for i in [{m : db_schema2[m]} for m in changed]]
 
         if added ==  set([]) and removed == set([]) and changed == set([]):
-            self.log("Schema of both DB Matches")
+            self.log.info("Schema of both DB Matches")
         else:
-            self.log("Schema of both DB Varies")
-            #self.log("Diff Shcema1 vs Shcema2 :- %s" %schema1_diff_schema2)
-            #self.log("Diff Shcema1 vs Shcema2 :- %s" %schema2_diff_schema1)
-            self.log("Changed DB Scehma :- %s" %changed)
-            self.log("Unchanged DB Schema :- %s" %unchanged)
+            self.log.error("Schema of both DB Varies")
+            #self.log.debug("Diff Shcema1 vs Shcema2 :- %s" %schema1_diff_schema2)
+            #self.log.debug("Diff Shcema1 vs Shcema2 :- %s" %schema2_diff_schema1)
+            self.log.warning("Changed DB Scehma :- %s" %changed)
+            self.log.warning("Unchanged DB Schema :- %s" %unchanged)
 
         # Compare data
         # Data for DB1
@@ -245,14 +245,14 @@ class SQL_Verify(object):
         [data2_diff_data1.update(i) for i in [{m : data_DB2[m]} for m in changed]]
 
         if added ==  set([]) and removed == set([]) and changed == set([]):
-            self.log("Data of both DB Matches")
+            self.log.info("Data of both DB Matches")
             return True
         else:
             #self.log("Diff DB1 vs DB2 :- %s " %(data1_diff_data2))
             #self.log("Diff DB1 vs DB2 :- %s" %(data2_diff_data1))
-            self.log("Changed DB Data :- %s" %changed)
-            self.log("Unchanged DB Data :- %s" %unchanged)
-            asserts.fail("Data of both DB Varies")
+            self.log.warning("Changed DB Data :- %s" %changed)
+            self.log.warning("Unchanged DB Data :- %s" %unchanged)
+            self.log.error("Data of both DB Varies")
             return False
 
     def delete_db(self, Instance_name, DB_name):
@@ -262,17 +262,17 @@ class SQL_Verify(object):
         query = "DROP DATABASE [%s]" %(DB_name)
         command = 'sqlcmd -S "%s" -Q "%s"' %(Instance_name, query)
         output = self._execute_remote_ps_command(command)
-        if not output:
-            self.log(
-                "Error in command execution :- get_table_data :- [%s, %s, %s] "
-                %(Instance_name, DB_name, table_name))
+        if output:
+            self.log.error(
+                "Error in command execution :- delete_db :- [%s, %s] "
+                %(Instance_name, DB_name))
             return False
         return True
 
     def delete_restored_db(self, Instance_name, DB_name):
         '''
         Deletes all the restored DB of given DB
-        Searches 'rst_' and DB name from all existing DBs
+        Searches 'rst_' and the given DB name from all existing DBs
         and deletes the matching ones
         '''
         op_before_delete = r"C:\SQL_Data\output_before_delete.txt"
@@ -283,9 +283,9 @@ class SQL_Verify(object):
 
         output = self._execute_remote_ps_command(command)
         if not output:
-            self.log(
-                "Error in command execution :- get_table_data :- [%s, %s, %s] "
-                %(Instance_name, DB_name, table_name))
+            self.log.error(
+                "Error in command execution :- delete_restored_db :- [%s, %s] "
+                %(Instance_name, DB_name))
             return False
         with open(op_before_delete, 'w') as f:
             f.write(output)   # all the db name
@@ -295,29 +295,31 @@ class SQL_Verify(object):
             for lines in f:
                 pt = re.compile(r"" + "rst_" + ".*" + DB_name +"[_?\d]*$")
                 m = re.findall(pt , lines.strip())
+                self.log.debug("Found matches are :- %s line %s" %(str(m), lines.strip()))
+                self.log.debug("DB name :- %s line :- %s" %(DB_name, lines.strip()))
                 if m != []:
                     db_list.append(m[0])
 
-        print db_list
+        self.log.debug("All restored DBs are :- %s" %str(db_list))
         for db in db_list:
             self.delete_db(Instance_name, db)
 
         output2 = self._execute_remote_ps_command(command)
         if not output2:
-            self.log(
-                "Error in command execution :- get_table_data :- [%s, %s, %s] "
-                %(Instance_name, DB_name, table_name))
+            self.log.error(
+                "Error in command execution :- delete_restored_db :- [%s, %s] "
+                %(Instance_name, DB_name))
             return False
         with open(op_after_delete, 'w') as f2:
             f2.write(output2)    # all the db name after delete
         with open(op_after_delete, 'r') as f2:
             if any (db in line.strip() for line in f2 for db in db_list):
-                self.log("All the restored databases were not deleted")
+                self.log.warning("All the restored databases were not deleted")
                 [db for db in db_list for line in f2 if db in line.strip()]
             else:
                 self.log.info("All the Restored dbs were deleted successfully")
-                self.log.debug("Total number of DBs deleted  :- ", len(db_list))
-                self.log.debug("Deleted DBs :- ", db_list)
+                self.log.debug("Total number of DBs deleted  :- %d" %len(db_list))
+                self.log.debug("Deleted DBs :- %s" %str(db_list))
 
     def _execute_remote_ps_command(self, command):
         '''
@@ -346,9 +348,11 @@ class SQL_Verify(object):
 
 
 # Sample calls
-sql_ob = SQL_Verify('192.168.58.160', auth=('Administrator', 'password'))
+sql_ob = SQL_Verify('192.168.10.50', auth=('Administrator', 'password'))
 sql_ob.compare_DB_Data(
-    ['WIN-SQL', 'database7'],
-    ['WIN-SQL', 'rst_database7'])
-sql_ob.delete_restored_db('WIN-SQL', 'database7')
-sql_ob.verify_db_is_deleted("WIN-SQL", "rst_database7")
+    ['SQL-2K12-WIN2K8', 'Demo'],
+    ['SQL-2K12-WIN2K8', 'rst_Demo'])
+sql_ob.delete_db('SQL-2K12-WIN2K8', 'rst_example')
+# Delete all the restored DB's for Demo i.e. rst_Demo, rst_Demo1
+sql_ob.delete_restored_db('SQL-2K12-WIN2K8', 'Demo')
+
